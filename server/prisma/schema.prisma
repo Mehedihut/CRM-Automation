@@ -13,4 +13,24 @@ model User {
   email     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  leads Lead[]
+}
+
+model Lead {
+  id         Int      @id @default(autoincrement())
+  name       String
+  phone      String
+  email      String?
+  source     String?
+  status     String   @default("NEW")
+  notes      String?
+  assignedTo Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  assignee User? @relation(fields: [assignedTo], references: [id])
+
+  @@index([status])
+  @@index([assignedTo])
 }
