@@ -1,0 +1,35 @@
+# Dependencies
+**/node_modules/
+
+# Build output
+**/dist/
+**/build/
+
+# Logs
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Env files (real secrets) — only examples are tracked
+**/.env
+**/.env.local
+**/.env.*.local
+!.env.example
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# Coverage / test artifacts
+**/coverage/
+**/.nyc_output/
+
+# Prisma generated artifacts (kept inside server/ but ignored per-app)
+server/prisma/migrations/dev.db*
+
+# TypeScript build info
+**/*.tsbuildinfo
