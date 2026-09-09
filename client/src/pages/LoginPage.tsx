@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../services/auth";
 import { Button } from "../components/Button";
 import { ErrorBanner } from "../components/ErrorBanner";
@@ -73,6 +73,9 @@ export function LoginPage(): JSX.Element {
               {submitting ? "Signing in…" : "Sign in"}
             </Button>
           </div>
+          <p style={{ marginTop: 12, fontSize: 13 }}>
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
         </form>
       </section>
     </main>

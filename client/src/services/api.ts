@@ -11,7 +11,7 @@ import type {
   ListLeadsQuery,
   UpdateLeadInput,
 } from "../types/leads";
-import type { LoginInput, User } from "../types/auth";
+import type { ForgotPasswordInput, LoginInput, ResetPasswordInput, User } from "../types/auth";
 import type { Call, CreateCallInput } from "../types/calls";
 import type { CreateWhatsAppInput, WhatsAppMessage } from "../types/whatsapp";
 import type {
@@ -122,6 +122,20 @@ export const api = {
   },
   me(): Promise<{ user: User }> {
     return request<{ user: User }>("/api/auth/me");
+  },
+  forgotPassword(email: string): Promise<{ message: string }> {
+    const input: ForgotPasswordInput = { email };
+    return request<{ message: string }>("/api/auth/forgot", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+  resetPassword(token: string, password: string): Promise<{ message: string }> {
+    const input: ResetPasswordInput = { token, password };
+    return request<{ message: string }>("/api/auth/reset", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   },
 
   // Team

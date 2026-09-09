@@ -73,6 +73,7 @@ model User {
   followUps      FollowUp[]
   pukuDecisions  PukuAccessRequest[] @relation("PukuDecider")
   auditEntries   AuditLog[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Lead {
@@ -183,4 +184,18 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([entity])
   @@index([actorId])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique         // sha256(rawToken); raw only ever emailed
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

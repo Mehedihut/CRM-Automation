@@ -55,6 +55,16 @@ const whatsappPhoneId = readString("WHATSAPP_PHONE_ID");
 const pukuApiBaseUrl = readString("PUKU_API_BASE_URL");
 const pukuApiToken = readString("PUKU_API_TOKEN");
 
+// SMTP for password-reset emails. When SMTP_HOST is unset, sendPasswordReset
+// falls back to logging the link to the server console (dev mode only).
+const smtpHost = readString("SMTP_HOST");
+const smtpPort = readNumber("SMTP_PORT", 587);
+const smtpUser = readString("SMTP_USER");
+const smtpPassword = readString("SMTP_PASSWORD");
+const smtpFrom = readString("SMTP_FROM", "CRM-Automation <no-reply@example.com>") ??
+  "CRM-Automation <no-reply@example.com>";
+const appBaseUrl = readString("APP_BASE_URL", "http://localhost:5173") ?? "http://localhost:5173";
+
 export const env = {
   nodeEnv,
   isProduction,
@@ -69,6 +79,15 @@ export const env = {
   meta: { verifyToken: metaVerifyToken, appSecret: metaAppSecret },
   whatsapp: { apiToken: whatsappApiToken, phoneId: whatsappPhoneId },
   puku: { baseUrl: pukuApiBaseUrl, token: pukuApiToken },
+  smtp: {
+    host: smtpHost,
+    port: smtpPort,
+    user: smtpUser,
+    password: smtpPassword,
+    from: smtpFrom,
+    enabled: Boolean(smtpHost && smtpUser && smtpPassword),
+  },
+  appBaseUrl,
 } as const;
 
 export type Env = typeof env;

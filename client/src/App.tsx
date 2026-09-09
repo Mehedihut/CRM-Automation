@@ -4,11 +4,13 @@ import { RequireAuth, RequireRole } from "./components/RouteGuard";
 import { AuthProvider } from "./services/auth";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FollowUpsPage } from "./pages/FollowUpsPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LeadDetailPage } from "./pages/LeadDetailPage";
 import { LeadsPage } from "./pages/LeadsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PukuAccessPage } from "./pages/PukuAccessPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { TeamPage } from "./pages/TeamPage";
 
 function App(): JSX.Element {
@@ -18,6 +20,8 @@ function App(): JSX.Element {
         <TopNav />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/"
             element={
