@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 
 import { env } from "./config/env";
 import apiRouter from "./routes";
@@ -23,6 +24,7 @@ export function createApp(): Application {
   app.use(compression());
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
 
   // Logging — concise in dev, combined in prod.
   if (env.isDevelopment) {

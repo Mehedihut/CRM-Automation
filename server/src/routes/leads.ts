@@ -1,41 +1,20 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import * as ctrl from "../controllers/leads.controller";
+import {
+  validateCreateLead,
+  validateLeadIdParam,
+  validateListLeads,
+  validateUpdateLead,
+} from "../validators/leads.schema";
+import { validateAssignLead } from "../validators/team.schema";
 
 const router = Router();
-const prisma = new PrismaClient();
 
-router.post("/", async (req, res, next) => {
-  try {
-    const { name, phone, email, source, notes } = req.body;
-
-    const lead = await prisma.lead.create({
-      data: {
-        name,
-        phone,
-        email,
-        source,
-        notes,
-      },
-    });
-
-    res.status(201).json(lead);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get("/", async (req, res, next) => {
-  try {
-    const leads = await prisma.lead.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    res.json(leads);
-  } catch (error) {
-    next(error);
-  }
-});
+router.post("/", validateCreateLead, ctrl.create);
+router.get("/", validateListLeads, ctrl.list);
+router.get("/:id", validateLeadIdParam, ctrl.getOne);
+router.patch("/:id", validateUpdateLead, ctrl.update);
+router.delete("/:id", validateLeadIdParam, ctrl.remove);
+router.post("/:id/assign", validateAssignLead, ctrl.assign);
 
 export default router;

@@ -33,3 +33,6 @@ server/prisma/migrations/dev.db*
 
 # TypeScript build info
 **/*.tsbuildinfo
+
+# Local CLI caches
+.puku/

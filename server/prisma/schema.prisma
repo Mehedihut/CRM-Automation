@@ -7,30 +7,152 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum UserRole {
+  ADMIN
+  AGENT
+}
 
-  leads Lead[]
+enum LeadStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  UNREACHABLE
+  CONVERTED
+}
+
+enum CallOutcome {
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  UNREACHABLE
+  CONVERTED
+  FOLLOW_UP_SCHEDULED
+}
+
+enum WhatsAppDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum FollowUpStatus {
+  PENDING
+  DONE
+  MISSED
+  CANCELED
+}
+
+enum PukuRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(AGENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  leads          Lead[]
+  calls          Call[]
+  whatsappSent   WhatsAppMessage[] @relation("WhatsAppSender")
+  followUps      FollowUp[]
+  pukuDecisions  PukuAccessRequest[] @relation("PukuDecider")
 }
 
 model Lead {
-  id         Int      @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   name       String
   phone      String
   email      String?
   source     String?
-  status     String   @default("NEW")
+  status     LeadStatus @default(NEW)
   notes      String?
   assignedTo Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  assignee User? @relation(fields: [assignedTo], references: [id])
+  assignee User?            @relation(fields: [assignedTo], references: [id])
+  calls    Call[]
+  whatsapp WhatsAppMessage[]
+  followUps FollowUp[]
 
   @@index([status])
   @@index([assignedTo])
+}
+
+model WhatsAppMessage {
+  id         Int               @id @default(autoincrement())
+  leadId     Int
+  senderId   Int?
+  direction  WhatsAppDirection
+  body       String
+  externalId String?           @unique
+  createdAt  DateTime          @default(now())
+
+  lead   Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sender User? @relation("WhatsAppSender", fields: [senderId], references: [id])
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model FollowUp {
+  id          Int            @id @default(autoincrement())
+  leadId      Int
+  assigneeId  Int
+  scheduledAt DateTime
+  status      FollowUpStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  lead     Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignee User @relation(fields: [assigneeId], references: [id])
+
+  @@index([leadId])
+  @@index([assigneeId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model PukuAccessRequest {
+  id             Int               @id @default(autoincrement())
+  requesterName  String
+  requesterEmail String?
+  requesterPhone String?
+  requestedScope String
+  reason         String?
+  status         PukuRequestStatus @default(PENDING)
+  decidedById    Int?
+  decidedAt      DateTime?
+  decisionNote   String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  decidedBy User? @relation("PukuDecider", fields: [decidedById], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Call {
+  id        Int         @id @default(autoincrement())
+  leadId    Int
+  agentId   Int
+  outcome   CallOutcome
+  notes     String?
+  duration  Int?
+  createdAt DateTime    @default(now())
+
+  lead  Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  agent User @relation(fields: [agentId], references: [id])
+
+  @@index([leadId])
+  @@index([agentId])
+  @@index([createdAt])
 }

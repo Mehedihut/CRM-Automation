@@ -22,6 +22,20 @@ const port = readNumber("PORT", 4000);
 const clientOrigin = readString("CLIENT_ORIGIN", "http://localhost:5173") ?? "http://localhost:5173";
 const databaseUrl = readString("DATABASE_URL");
 
+// Auth / cookies
+const jwtSecret = readString("JWT_SECRET", "dev-insecure-jwt-secret-change-me");
+const jwtExpiresIn = readString("JWT_EXPIRES_IN", "7d") ?? "7d";
+const cookieDomain = readString("COOKIE_DOMAIN");
+const bcryptRounds = readNumber("BCRYPT_ROUNDS", 10);
+
+// Optional integration credentials (consumed by stubs in src/integrations/).
+const metaVerifyToken = readString("META_VERIFY_TOKEN");
+const metaAppSecret = readString("META_APP_SECRET");
+const whatsappApiToken = readString("WHATSAPP_API_TOKEN");
+const whatsappPhoneId = readString("WHATSAPP_PHONE_ID");
+const pukuApiBaseUrl = readString("PUKU_API_BASE_URL");
+const pukuApiToken = readString("PUKU_API_TOKEN");
+
 export const env = {
   nodeEnv,
   isProduction: nodeEnv === "production",
@@ -29,6 +43,13 @@ export const env = {
   port,
   clientOrigin,
   databaseUrl,
+  jwtSecret,
+  jwtExpiresIn,
+  cookieDomain,
+  bcryptRounds,
+  meta: { verifyToken: metaVerifyToken, appSecret: metaAppSecret },
+  whatsapp: { apiToken: whatsappApiToken, phoneId: whatsappPhoneId },
+  puku: { baseUrl: pukuApiBaseUrl, token: pukuApiToken },
 } as const;
 
 export type Env = typeof env;
