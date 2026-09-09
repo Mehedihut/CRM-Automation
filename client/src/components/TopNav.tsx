@@ -25,9 +25,14 @@ export function TopNav(): JSX.Element {
             Puku
           </NavLink>
           {user.role === "ADMIN" && (
-            <NavLink to="/team" className={linkClass}>
-              Team
-            </NavLink>
+            <>
+              <NavLink to="/team" className={linkClass}>
+                Team
+              </NavLink>
+              <NavLink to="/audit" className={linkClass}>
+                Audit
+              </NavLink>
+            </>
           )}
         </>
       ) : (

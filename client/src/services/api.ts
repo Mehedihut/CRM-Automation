@@ -28,6 +28,7 @@ import type {
   UpdatePukuRequestInput,
 } from "../types/puku";
 import type { DashboardStats } from "../types/dashboard";
+import type { AuditListResponse, ListAuditQuery } from "../types/audit";
 
 export class ApiClientError extends Error {
   public readonly status: number;
@@ -276,5 +277,12 @@ export const api = {
   // Dashboard
   getDashboardStats(): Promise<DashboardStats> {
     return request<DashboardStats>("/api/dashboard/stats");
+  },
+
+  // Audit (admin)
+  listAuditLog(query?: ListAuditQuery): Promise<AuditListResponse> {
+    return request<AuditListResponse>(
+      `/api/audit${toQuery(query as Record<string, unknown> | undefined)}`,
+    );
   },
 };

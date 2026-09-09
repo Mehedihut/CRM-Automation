@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { TopNav } from "./components/TopNav";
 import { RequireAuth, RequireRole } from "./components/RouteGuard";
 import { AuthProvider } from "./services/auth";
+import { AuditLogPage } from "./pages/AuditLogPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FollowUpsPage } from "./pages/FollowUpsPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -68,6 +69,14 @@ function App(): JSX.Element {
               <RequireAuth>
                 <PukuAccessPage />
               </RequireAuth>
+            }
+          />
+          <Route
+            path="/audit"
+            element={
+              <RequireRole roles={["ADMIN"]}>
+                <AuditLogPage />
+              </RequireRole>
             }
           />
           <Route path="*" element={<NotFoundPage />} />
