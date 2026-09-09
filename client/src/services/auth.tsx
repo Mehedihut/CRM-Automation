@@ -19,6 +19,8 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
 }
 
+export type { AuthContextValue };
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function describeError(err: unknown): string {
