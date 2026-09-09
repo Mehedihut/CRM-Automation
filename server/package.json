@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "description": "CRM-Automation backend (Express + TypeScript + Prisma)",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "echo \"(lint placeholder) add eslint in a later step\"",
     "prisma:generate": "prisma generate",

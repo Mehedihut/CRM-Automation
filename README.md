@@ -201,6 +201,82 @@ These will be added in subsequent, separately-scoped steps.
 
 ---
 
+## Deploy to Vercel
+
+The server ships with a serverless entry (`server/api/index.ts`) and
+`server/vercel.json` ready for one-click deploy. The client ships with
+`client/vercel.json` that handles SPA rewrites.
+
+The two projects are deployed **separately** because they live in
+different sub-directories of the repo.
+
+### Server (API)
+
+1. Vercel → **Add New…** → **Project** → import this repo.
+2. **Root Directory**: `server`.
+3. **Framework Preset**: leave as "Other" (Vercel auto-detects
+   `@vercel/node` from `vercel.json`).
+4. Add the environment variables below.
+5. Deploy.
+
+#### Required env vars (server)
+
+| Var | Notes |
+| --- | --- |
+| `DATABASE_URL` | Postgres connection string — Neon, Supabase, or Vercel Postgres all work. The server refuses to boot without it when `NODE_ENV=production`. |
+| `JWT_SECRET` | Strong random string (`openssl rand -hex 32`). Boot will fail loudly if this is left as the dev fallback. |
+| `COOKIE_DOMAIN` | Set to `.your-domain.com` (leading dot) for cross-subdomain cookies, or leave blank. |
+| `CLIENT_ORIGIN` | The deployed client URL — comma-separate multiple if you have a preview + prod. Used by CORS. |
+| `APP_BASE_URL` | Public base URL used to build password-reset links. |
+| `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASSWORD` `SMTP_FROM` | All required for forgot-password emails to be sent. When any is missing, the reset link is logged to the server console (dev only — set all of them in production). |
+
+`NODE_ENV=production` is set automatically by `vercel.json`.
+
+#### Database migrations
+
+Vercel does **not** run `prisma migrate` on deploy. From your laptop,
+with `DATABASE_URL` pointed at the production database:
+
+```bash
+npm --prefix server run prisma:generate
+npx prisma migrate deploy --schema server/prisma/schema.prisma
+```
+
+(Or use the Vercel CLI's `vercel env pull` to grab prod env into a
+local `.env` for that one-off migration run.)
+
+#### Verify
+
+```bash
+curl https://<your-api>.vercel.app/api/healthz
+# → { "success": true, "data": { "status": "ok", "db": "ok" } }
+```
+
+### Client (SPA)
+
+1. Vercel → **Add New…** → **Project** → import this repo (same one).
+2. **Root Directory**: `client`.
+3. **Framework Preset**: Vite.
+4. Add environment variable:
+   - `VITE_API_BASE_URL` = the deployed server URL (e.g.
+     `https://<your-api>.vercel.app`). No trailing slash.
+5. Deploy.
+
+`client/vercel.json` ships a single rewrite that sends all paths to
+`/index.html`, so React Router works on hard reloads and direct links.
+
+### Local sanity check before deploying
+
+```bash
+npm --prefix server  run typecheck
+npm --prefix client  run typecheck
+npm --prefix client  run build      # Vite build (also typechecks)
+```
+
+All three should exit 0. Then push and let Vercel do the rest.
+
+---
+
 ## License
 
 Internal — not yet licensed for public distribution.
