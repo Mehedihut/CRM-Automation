@@ -37,4 +37,7 @@ export class ApiError extends Error {
   static notImplemented(message: string): ApiError {
     return new ApiError(501, "NOT_IMPLEMENTED", message);
   }
+  static tooManyRequests(message = "Too many requests"): ApiError {
+    return new ApiError(429, "TOO_MANY_REQUESTS", message);
+  }
 }

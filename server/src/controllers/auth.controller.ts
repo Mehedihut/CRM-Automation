@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { env } from "../config/env";
 import { getPrismaClient } from "../config/prisma";
-import { getCurrentUser, login } from "../services/auth.service";
+import { getCurrentUser, login, recordLogout } from "../services/auth.service";
 import { COOKIE_NAME } from "../middleware/requireAuth";
 import type { LoginInput } from "../validators/auth.schema";
 
@@ -22,14 +22,26 @@ function cookieOptions() {
   };
 }
 
+function requestContext(req: Request): { ip: string | null; userAgent: string | null } {
+  return {
+    ip: req.ip ?? null,
+    userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
+  };
+}
+
 export const loginHandler = asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body as LoginInput;
-  const { user, token } = await login(getPrismaClient(), email, password);
+  const { user, token } = await login(getPrismaClient(), email, password, requestContext(req));
   res.cookie(COOKIE_NAME, token, cookieOptions());
   res.status(200).json({ success: true, data: { user } });
 });
 
-export const logoutHandler = asyncHandler(async (_req: Request, res: Response) => {
+export const logoutHandler = asyncHandler(async (req: Request, res: Response) => {
+  // Best-effort audit — if `req.user` is missing (e.g. cookie already
+  // expired) we still want the cookie cleared, so we don't block on it.
+  if (req.user) {
+    await recordLogout(getPrismaClient(), req.user.id, requestContext(req));
+  }
   res.clearCookie(COOKIE_NAME, { ...cookieOptions(), maxAge: 0 });
   res.status(204).end();
 });

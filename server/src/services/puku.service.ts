@@ -2,11 +2,17 @@ import { PrismaClient, Prisma, type PukuAccessRequest } from "@prisma/client";
 import { ApiError } from "../utils/ApiError";
 import { logger } from "../utils/logger";
 import { pukuProvisionAccess } from "../integrations/puku";
+import { recordAudit } from "./audit.service";
 import type {
   CreatePukuRequestInput,
   ListPukuRequestsQuery,
   UpdatePukuRequestInput,
 } from "../validators/puku.schema";
+
+export interface AuditContext {
+  ip?: string | null;
+  userAgent?: string | null;
+}
 
 const deciderSelect = { id: true, name: true, email: true } as const;
 const include = { decidedBy: { select: deciderSelect } } as const;
@@ -96,6 +102,7 @@ export async function approve(
   id: number,
   deciderId: number,
   note: string | undefined,
+  auditCtx: AuditContext = {},
 ): Promise<PukuAccessRequest> {
   const existing = await prisma.pukuAccessRequest.findUnique({ where: { id } });
   if (!existing) {
@@ -109,19 +116,34 @@ export async function approve(
     );
   }
 
-  // INTEGRATION TODO — call Puku API; current stub throws 501.
+  // INTEGRATION TODO — call Puku API; current stub throws 501. We run it
+  // BEFORE the transaction so a transient provisioning failure doesn't
+  // leave a phantom audit row when the request hasn't actually changed.
   await pukuProvisionAccess({ requestId: id, scope: existing.requestedScope });
 
   // unreachable in current implementation; stub throws.
-  const updated = await prisma.pukuAccessRequest.update({
-    where: { id },
-    data: {
-      status: "APPROVED",
-      decidedById: deciderId,
-      decidedAt: new Date(),
-      decisionNote: note,
-    },
-    include,
+  const updated = await prisma.$transaction(async (tx) => {
+    const next = await tx.pukuAccessRequest.update({
+      where: { id },
+      data: {
+        status: "APPROVED",
+        decidedById: deciderId,
+        decidedAt: new Date(),
+        decisionNote: note,
+      },
+      include,
+    });
+    await tx.auditLog.create({
+      data: {
+        action: "PUKU_DECIDED",
+        entity: `puku_request:${id}`,
+        actorId: deciderId,
+        ip: auditCtx.ip ?? null,
+        userAgent: auditCtx.userAgent ?? null,
+        metadata: { decision: "APPROVED", note: note ?? null },
+      },
+    });
+    return next;
   });
   logger.info("Puku request approved", { id, deciderId });
   return updated;
@@ -132,6 +154,7 @@ export async function reject(
   id: number,
   deciderId: number,
   note: string | undefined,
+  auditCtx: AuditContext = {},
 ): Promise<PukuAccessRequest> {
   const existing = await prisma.pukuAccessRequest.findUnique({ where: { id } });
   if (!existing) {
@@ -144,15 +167,28 @@ export async function reject(
       `Request already ${existing.status.toLowerCase()}.`,
     );
   }
-  const updated = await prisma.pukuAccessRequest.update({
-    where: { id },
-    data: {
-      status: "REJECTED",
-      decidedById: deciderId,
-      decidedAt: new Date(),
-      decisionNote: note,
-    },
-    include,
+  const updated = await prisma.$transaction(async (tx) => {
+    const next = await tx.pukuAccessRequest.update({
+      where: { id },
+      data: {
+        status: "REJECTED",
+        decidedById: deciderId,
+        decidedAt: new Date(),
+        decisionNote: note,
+      },
+      include,
+    });
+    await tx.auditLog.create({
+      data: {
+        action: "PUKU_DECIDED",
+        entity: `puku_request:${id}`,
+        actorId: deciderId,
+        ip: auditCtx.ip ?? null,
+        userAgent: auditCtx.userAgent ?? null,
+        metadata: { decision: "REJECTED", note: note ?? null },
+      },
+    });
+    return next;
   });
   logger.info("Puku request rejected", { id, deciderId });
   return updated;

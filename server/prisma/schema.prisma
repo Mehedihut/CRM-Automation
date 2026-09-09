@@ -48,6 +48,16 @@ enum PukuRequestStatus {
   REJECTED
 }
 
+enum AuditAction {
+  PUKU_DECIDED
+  LEAD_REASSIGNED
+  AUTH_LOGIN_SUCCESS
+  AUTH_LOGIN_FAILURE
+  AUTH_LOGOUT
+  AUTH_PASSWORD_RESET_REQUESTED
+  AUTH_PASSWORD_RESET_COMPLETED
+}
+
 model User {
   id           Int      @id @default(autoincrement())
   name         String
@@ -62,6 +72,7 @@ model User {
   whatsappSent   WhatsAppMessage[] @relation("WhatsAppSender")
   followUps      FollowUp[]
   pukuDecisions  PukuAccessRequest[] @relation("PukuDecider")
+  auditEntries   AuditLog[]
 }
 
 model Lead {
@@ -155,4 +166,21 @@ model Call {
   @@index([leadId])
   @@index([agentId])
   @@index([createdAt])
+}
+
+model AuditLog {
+  id        Int         @id @default(autoincrement())
+  action    AuditAction
+  entity    String?     // e.g. "puku_request:42", "lead:7"; null for auth events
+  actorId   Int?        // null for failed-login / anonymous
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([action, createdAt])
+  @@index([entity])
+  @@index([actorId])
 }

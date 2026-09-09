@@ -52,6 +52,9 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
 export const assign = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params as unknown as IdParams;
   const { userId } = req.body as AssignLeadInput;
-  const data = await assignLead(getPrismaClient(), id, userId);
+  const data = await assignLead(getPrismaClient(), id, userId, req.user!.id, {
+    ip: req.ip ?? null,
+    userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
+  });
   res.status(200).json({ success: true, data });
 });

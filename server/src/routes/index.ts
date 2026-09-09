@@ -8,6 +8,7 @@ import whatsappRoutes from "./whatsapp";
 import followUpRoutes from "./followups";
 import pukuRoutes from "./puku";
 import dashboardRoutes from "./dashboard";
+import auditRoutes from "./audit";
 
 // All API routes mounted under /api. Add cross-cutting middleware (auth,
 // rate-limit) here.
@@ -22,5 +23,6 @@ router.use("/whatsapp", whatsappRoutes);
 router.use("/follow-ups", followUpRoutes);
 router.use("/puku-access", pukuRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/audit", auditRoutes);
 
 export default router;

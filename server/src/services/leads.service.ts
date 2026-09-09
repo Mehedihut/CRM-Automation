@@ -102,17 +102,41 @@ export async function assignLead(
   prisma: PrismaClient,
   leadId: number,
   userId: number | null,
+  actorId: number,
+  auditCtx: { ip?: string | null; userAgent?: string | null } = {},
 ): Promise<Lead> {
-  // Single-update path. P2025 = lead missing, P2003 = assignedTo user missing.
-  // Previous assignee is unknown to the caller; an audit trail belongs to a
-  // later step.
+  // Capture the previous assignee so the audit row can show before/after.
+  const before = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { assignedTo: true },
+  });
+  if (!before) {
+    throw new ApiError(404, "LEAD_NOT_FOUND", "Lead not found");
+  }
+
   try {
-    const updated = await prisma.lead.update({
-      where: { id: leadId },
-      data: { assignedTo: userId },
-      include: leadInclude,
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.lead.update({
+        where: { id: leadId },
+        data: { assignedTo: userId },
+        include: leadInclude,
+      });
+      await tx.auditLog.create({
+        data: {
+          action: "LEAD_REASSIGNED",
+          entity: `lead:${leadId}`,
+          actorId,
+          ip: auditCtx.ip ?? null,
+          userAgent: auditCtx.userAgent ?? null,
+          metadata: {
+            from: before.assignedTo,
+            to: userId,
+          },
+        },
+      });
+      return next;
     });
-    logger.info("Lead assignment changed", { leadId, newAssignee: userId });
+    logger.info("Lead assignment changed", { leadId, from: before.assignedTo, to: userId });
     return updated;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
