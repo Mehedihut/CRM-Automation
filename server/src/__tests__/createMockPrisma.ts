@@ -11,7 +11,7 @@ export interface MockPrisma {
   user: Record<string, Mock>;
   lead: Record<string, Mock>;
   call: Record<string, Mock>;
-  whatsappMessage: Record<string, Mock>;
+  whatsAppMessage: Record<string, Mock>;
   followUp: Record<string, Mock>;
   pukuAccessRequest: Record<string, Mock>;
   auditLog: Record<string, Mock>;
@@ -53,7 +53,7 @@ export function createMockPrisma(): MockPrisma {
     user: Record<string, Mock>;
     lead: Record<string, Mock>;
     call: Record<string, Mock>;
-    whatsappMessage: Record<string, Mock>;
+    whatsAppMessage: Record<string, Mock>;
     followUp: Record<string, Mock>;
     pukuAccessRequest: Record<string, Mock>;
     auditLog: Record<string, Mock>;
@@ -66,7 +66,7 @@ export function createMockPrisma(): MockPrisma {
     user: modelMock(),
     lead: modelMock(),
     call: modelMock(),
-    whatsappMessage: modelMock(),
+    whatsAppMessage: modelMock(),
     followUp: modelMock(),
     pukuAccessRequest: modelMock(),
     auditLog: modelMock(),

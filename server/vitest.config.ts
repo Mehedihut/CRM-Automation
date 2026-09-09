@@ -10,15 +10,16 @@ export default defineConfig({
       reporter: ["text", "html"],
       include: ["src/services/**/*.ts", "src/utils/**/*.ts"],
       exclude: ["src/**/*.test.ts", "src/**/*.d.ts"],
-      // Baseline thresholds from initial coverage run (commit a2f945a):
-      //   lines 53.33% / branches 67.17% / functions 59.32%
-      // Set just under those so CI fails if a PR regresses without being
-      // hostile on day one. Tighten as we add tests.
+      // Baseline thresholds from the dashboard/whatsapp/team test addition:
+      //   lines 78.85% / branches 77.83% / functions 71.01%
+      // Set ~3-5 points under the current floor so CI fails on a real
+      // regression but isn't hostile on a one-line PR. Tighten as we
+      // cover more (controllers/middleware/integrations).
       thresholds: {
-        lines: 50,
-        branches: 60,
-        functions: 50,
-        statements: 50,
+        lines: 75,
+        branches: 75,
+        functions: 70,
+        statements: 75,
       },
     },
   },
