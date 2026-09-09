@@ -18,15 +18,34 @@ function readNumber(name: string, fallback: number): number {
 }
 
 const nodeEnv = readString("NODE_ENV", "development") ?? "development";
+const isProduction = nodeEnv === "production";
 const port = readNumber("PORT", 4000);
 const clientOrigin = readString("CLIENT_ORIGIN", "http://localhost:5173") ?? "http://localhost:5173";
 const databaseUrl = readString("DATABASE_URL");
 
-// Auth / cookies
-const jwtSecret = readString("JWT_SECRET", "dev-insecure-jwt-secret-change-me");
+// Auth / cookies. The dev fallback is intentionally weak so a misconfigured
+// production deploy fails loudly at boot rather than running with a guessable
+// signing key.
+const DEV_INSECURE_JWT_SECRET = "dev-insecure-jwt-secret-change-me";
+const jwtSecretRaw = readString("JWT_SECRET", DEV_INSECURE_JWT_SECRET) ?? DEV_INSECURE_JWT_SECRET;
+if (isProduction && jwtSecretRaw === DEV_INSECURE_JWT_SECRET) {
+  throw new Error(
+    "Refusing to boot in production with the development JWT_SECRET fallback. " +
+      "Set the JWT_SECRET environment variable to a strong random value (e.g. `openssl rand -hex 32`).",
+  );
+}
+const jwtSecret = jwtSecretRaw;
 const jwtExpiresIn = readString("JWT_EXPIRES_IN", "7d") ?? "7d";
 const cookieDomain = readString("COOKIE_DOMAIN");
 const bcryptRounds = readNumber("BCRYPT_ROUNDS", 10);
+
+// Same fail-loud rule for the database: production needs a real URL.
+if (isProduction && !databaseUrl) {
+  throw new Error(
+    "Refusing to boot in production without DATABASE_URL. " +
+      "Set the DATABASE_URL environment variable to your Postgres connection string.",
+  );
+}
 
 // Optional integration credentials (consumed by stubs in src/integrations/).
 const metaVerifyToken = readString("META_VERIFY_TOKEN");
@@ -38,7 +57,7 @@ const pukuApiToken = readString("PUKU_API_TOKEN");
 
 export const env = {
   nodeEnv,
-  isProduction: nodeEnv === "production",
+  isProduction,
   isDevelopment: nodeEnv === "development",
   port,
   clientOrigin,

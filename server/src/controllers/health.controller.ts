@@ -28,3 +28,37 @@ export const health = asyncHandler(async (_req: Request, res: Response): Promise
   const status = getHealthStatus(dbError);
   res.status(200).json({ success: true, data: status });
 });
+
+/**
+ * GET /api/healthz
+ * Stricter 12-factor liveness/readiness probe. Returns 503 when the
+ * database is configured but unreachable — Vercel + uptime monitors will
+ * mark the deploy unhealthy and stop sending traffic.
+ */
+export const healthz = asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+  const dbConfigured = Boolean(process.env.DATABASE_URL);
+
+  if (!dbConfigured) {
+    // Boot is valid; nothing is wired yet. 200 keeps monitoring green until
+    // DATABASE_URL is supplied.
+    res.status(200).json({
+      success: true,
+      data: { status: "ok", db: "not_configured" },
+    });
+    return;
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ success: true, data: { status: "ok", db: "ok" } });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown database error";
+    logger.warn("Healthz: database unreachable", { err: message });
+    res.status(503).json({
+      success: false,
+      error: { code: "DATABASE_UNAVAILABLE", message: "Database is unreachable." },
+      data: { status: "unhealthy", db: "error", detail: message },
+    });
+  }
+});

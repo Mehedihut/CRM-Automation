@@ -1,4 +1,4 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -9,9 +9,19 @@ import { env } from "./config/env";
 import apiRouter from "./routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { logger } from "./utils/logger";
+import { requestId } from "./middleware/requestId";
+import { healthz } from "./controllers/health.controller";
 
 export function createApp(): Application {
   const app = express();
+
+  // Trust the first proxy hop (Vercel/CloudFront/load balancers) so
+  // express-rate-limit + req.ip see the real client IP, not the proxy.
+  app.set("trust proxy", 1);
+
+  // Per-request id, set before anything that might log so the id appears in
+  // every line emitted while handling this request.
+  app.use(requestId);
 
   // Security & basics
   app.use(helmet());
@@ -26,15 +36,17 @@ export function createApp(): Application {
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
 
-  // Logging — concise in dev, combined in prod.
-  if (env.isDevelopment) {
-    app.use(morgan("dev"));
-  } else {
-    app.use(morgan("combined"));
-  }
+  // Logging — concise in dev, combined in prod. Tag every line with the
+  // request id so a 5xx is traceable end to end.
+  morgan.token("id", (req: Request) => (req.id ?? "-"));
+  const morganFormat = env.isDevelopment
+    ? ":method :url :status :response-time[0]ms req=:id"
+    : ':remote-addr - :remote-user ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" req=:id';
+  app.use(morgan(morganFormat));
 
-  // Mount API under /api
+  // Liveness + DB-readiness probe. Public. Does not require auth.
   app.use("/api", apiRouter);
+  app.get("/api/healthz", healthz);
 
   // Root → friendly JSON for manual probing.
   app.get("/", (_req, res) => {

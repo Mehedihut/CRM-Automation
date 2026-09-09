@@ -22,7 +22,7 @@ export function notFoundHandler(req: Request, _res: Response, next: NextFunction
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction,
@@ -51,14 +51,14 @@ export function errorHandler(
       },
     };
     if (err.status >= 500) {
-      logger.error(`ApiError ${err.status} ${err.code}`, { message: err.message });
+      logger.error(`ApiError ${err.status} ${err.code}`, { message: err.message, reqId: req.id });
     }
     res.status(err.status).json(body);
     return;
   }
 
   // Fallback for unknown errors — never leak internals in production.
-  logger.error("Unhandled error", { err: serializeError(err) });
+  logger.error("Unhandled error", { err: serializeError(err), reqId: req.id });
   const body: ErrorBody = {
     success: false,
     error: {
