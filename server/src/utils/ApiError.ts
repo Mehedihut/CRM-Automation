@@ -31,6 +31,12 @@ export class ApiError extends Error {
   static conflict(message: string): ApiError {
     return new ApiError(409, "CONFLICT", message);
   }
+  static unprocessable(message: string, details?: unknown): ApiError {
+    return new ApiError(422, "UNPROCESSABLE_ENTITY", message, details);
+  }
+  static tooManyRequests(message = "Too many requests"): ApiError {
+    return new ApiError(429, "TOO_MANY_REQUESTS", message);
+  }
   static internal(message = "Internal server error"): ApiError {
     return new ApiError(500, "INTERNAL_ERROR", message);
   }

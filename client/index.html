@@ -4,6 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CRM-Automation</title>
+    <script>
+      // Pre-React bootstrap: apply persisted theme as early as possible to avoid
+      // a flash of unstyled content. Mirrors client/src/lib/theme.ts so the
+      // algorithm must stay in sync.
+      (function () {
+        try {
+          var raw = localStorage.getItem("crm-theme");
+          var t = "system";
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            var v = parsed && parsed.state && parsed.state.theme;
+            if (v === "light" || v === "dark" || v === "system") t = v;
+          }
+          var resolved = t;
+          if (t === "system") {
+            resolved =
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          }
+          document.documentElement.dataset.theme = resolved;
+        } catch (_) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

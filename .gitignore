@@ -31,5 +31,11 @@ Thumbs.db
 # Prisma generated artifacts (kept inside server/ but ignored per-app)
 server/prisma/migrations/dev.db*
 
+# SQLite database files (local dev only — never commit)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
 # TypeScript build info
 **/*.tsbuildinfo

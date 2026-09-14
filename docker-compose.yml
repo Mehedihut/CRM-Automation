@@ -1,0 +1,78 @@
+# CRM-Automation — Docker Compose (production-style stack)
+# Brings up Postgres + Adminer + the Express server + the React client.
+#
+# Usage:
+#   1. Make sure Docker Desktop is running.
+#   2. From the repo root:  docker compose up -d --build
+#   3. Wait ~30s for the server to apply migrations + seed.
+#   4. Open http://localhost:8080
+#
+# Default credentials:
+#   ADMIN: admin@crm.local / admin123
+#   AGENT: agent1@crm.local / agent123
+#   AGENT: agent2@crm.local / agent123
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: crm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+      POSTGRES_DB: crm
+    volumes:
+      - crm_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:4
+    container_name: crm_adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: crm_server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      CLIENT_ORIGIN: "http://localhost:8080"
+      DATABASE_URL: "postgresql://crm:crm@postgres:5432/crm?schema=public"
+      JWT_SECRET: "change-me-in-production-please-use-a-long-random-string"
+    ports:
+      - "4000:4000"
+    # The server image runs `prisma migrate deploy` + `seed` on startup
+    # (see server/Dockerfile + server/docker-entrypoint.sh).
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: crm_client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "8080:80"
+
+volumes:
+  crm_pgdata:

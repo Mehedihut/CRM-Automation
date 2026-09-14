@@ -1,29 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 import { env } from "./env";
 
-// We deliberately do NOT instantiate PrismaClient at module load when the
-// database URL is missing — we want a graceful, explicit configuration error
-// instead of a noisy Prisma init crash on boot.
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined;
+}
 
-let _client: PrismaClient | null = null;
+export const prisma: PrismaClient =
+  globalThis.__prisma ??
+  new PrismaClient({
+    log: env.isDevelopment ? ["warn", "error"] : ["error"],
+  });
 
-export function getPrismaClient(): PrismaClient {
-  if (!env.databaseUrl) {
-    throw new Error(
-      "DATABASE_URL is not configured. Copy server/.env.example to server/.env and set DATABASE_URL, then restart the server.",
-    );
-  }
-  if (!_client) {
-    _client = new PrismaClient({
-      log: env.isDevelopment ? ["warn", "error"] : ["error"],
-    });
-  }
-  return _client;
+if (env.isDevelopment) {
+  globalThis.__prisma = prisma;
 }
 
 export async function disconnectPrisma(): Promise<void> {
-  if (_client) {
-    await _client.$disconnect();
-    _client = null;
-  }
+  await prisma.$disconnect();
 }

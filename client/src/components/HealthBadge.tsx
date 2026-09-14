@@ -16,7 +16,7 @@ export function HealthBadge(): JSX.Element {
   useEffect(() => {
     let cancelled = false;
     api
-      .getHealth()
+      .get<HealthData>("/api/health")
       .then((data) => {
         if (!cancelled) setState({ loading: false, data, error: null });
       })

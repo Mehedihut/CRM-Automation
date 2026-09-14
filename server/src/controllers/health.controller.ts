@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { getHealthStatus } from "../services/health.service";
-import { getPrismaClient } from "../config/prisma";
+import { prisma } from "../config/prisma";
 import { logger } from "../utils/logger";
 
 /**
@@ -17,7 +17,6 @@ export const health = asyncHandler(async (_req: Request, res: Response): Promise
   // report "configured: false" rather than throwing.
   if (process.env.DATABASE_URL) {
     try {
-      const prisma = getPrismaClient();
       await prisma.$queryRaw`SELECT 1`;
     } catch (err) {
       dbError = err instanceof Error ? err.message : "Unknown database error";

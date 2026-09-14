@@ -1,7 +1,12 @@
-import { DashboardPage } from "./pages/DashboardPage";
+import { RouterProvider } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { router } from "./routes";
+import { queryClient } from "./lib/queryClient";
 
-function App(): JSX.Element {
-  return <DashboardPage />;
+export default function App(): JSX.Element {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  );
 }
-
-export default App;

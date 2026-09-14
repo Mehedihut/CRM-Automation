@@ -1,5 +1,5 @@
 import { config } from "../config";
-import type { ApiResponse, HealthData } from "../types/api";
+import type { ApiResponse } from "../types/api";
 
 export class ApiClientError extends Error {
   public readonly status: number;
@@ -15,16 +15,35 @@ export class ApiClientError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+interface RequestOptions extends Omit<RequestInit, "body"> {
+  body?: unknown; // will be JSON.stringified unless it's already a string/FormData
+}
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { body, headers, ...rest } = options;
   const url = `${config.apiBaseUrl}${path}`;
+
+  // Only set Content-Type when we actually send a JSON body.
+  const finalHeaders: Record<string, string> = { ...(headers as Record<string, string>) };
+  let finalBody: BodyInit | undefined;
+  if (body !== undefined && body !== null) {
+    if (typeof body === "string" || body instanceof FormData) {
+      finalBody = body;
+    } else {
+      finalHeaders["Content-Type"] = "application/json";
+      finalBody = JSON.stringify(body);
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-      ...init,
+      credentials: "include",
+      ...rest,
+      headers: finalHeaders,
+      body: finalBody,
     });
   } catch (err) {
-    // Network / CORS / DNS failure.
     throw new ApiClientError(
       0,
       "NETWORK_ERROR",
@@ -32,27 +51,39 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
 
-  let body: ApiResponse<T> | null = null;
-  try {
-    body = (await response.json()) as ApiResponse<T>;
-  } catch {
-    throw new ApiClientError(
-      response.status,
-      "INVALID_RESPONSE",
-      "Server returned a non-JSON response.",
-    );
+  // Read body once, then decide.
+  const text = await response.text();
+  let parsed: ApiResponse<T> | null = null;
+  if (text) {
+    try {
+      parsed = JSON.parse(text) as ApiResponse<T>;
+    } catch {
+      // Non-JSON response.
+      if (response.ok) {
+        throw new ApiClientError(
+          response.status,
+          "INVALID_RESPONSE",
+          "Server returned a non-JSON success response.",
+        );
+      }
+      throw new ApiClientError(
+        response.status,
+        "INVALID_RESPONSE",
+        `Server returned a non-JSON response: ${text.slice(0, 200)}`,
+      );
+    }
   }
 
-  if (!body || response.ok) {
-    if (body && body.success) return body.data;
+  if (response.ok && parsed && parsed.success === true) {
+    return parsed.data;
   }
 
-  if (body && body.success === false) {
+  if (parsed && parsed.success === false) {
     throw new ApiClientError(
       response.status,
-      body.error.code,
-      body.error.message,
-      body.error.details,
+      parsed.error.code,
+      parsed.error.message,
+      parsed.error.details,
     );
   }
 
@@ -64,7 +95,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getHealth(): Promise<HealthData> {
-    return request<HealthData>("/api/health");
+  get<T>(path: string, options?: RequestOptions): Promise<T> {
+    return request<T>(path, { ...options, method: "GET" });
+  },
+  post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return request<T>(path, { ...options, method: "POST", body });
+  },
+  patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return request<T>(path, { ...options, method: "PATCH", body });
+  },
+  put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T> {
+    return request<T>(path, { ...options, method: "PUT", body });
+  },
+  delete<T = void>(path: string, options?: RequestOptions): Promise<T> {
+    return request<T>(path, { ...options, method: "DELETE" });
   },
 };
